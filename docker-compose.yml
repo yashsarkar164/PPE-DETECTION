@@ -1,0 +1,59 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ppe_user
+      POSTGRES_PASSWORD: ppe_password
+      POSTGRES_DB: ppe_detection
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/1_schema.sql:ro
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/2_seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ppe_user -d ppe_detection"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://ppe_user:ppe_password@db:5432/ppe_detection
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-this-to-a-long-random-string-in-production}
+      MODEL_PATH: models/iocl_ppe.pt
+      DEVICE: cpu
+      STORAGE_PROVIDER: local
+      FRONTEND_ORIGIN: http://localhost:3000
+      ENVIRONMENT: production
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount the trained model, and persist uploads/results outside the container
+      - ./backend/models:/app/models
+      - backend_uploads:/app/uploads
+      - backend_results:/app/results
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      BACKEND_URL: http://backend:8000
+      NEXT_PUBLIC_API_URL: ""
+    ports:
+      - "3000:3000"
+
+volumes:
+  pgdata:
+  backend_uploads:
+  backend_results:
