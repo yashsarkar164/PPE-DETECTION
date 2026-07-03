@@ -43,9 +43,13 @@ export function useWebcamDetection() {
       violationCountRef.current = 0;
       fpsWindowRef.current = [];
 
-      const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || `${window.location.protocol}//${window.location.host}`;
-      const wsBase = apiBase.replace(/^http/, wsProtocol === "wss" ? "wss" : "ws");
+      const apiBase =
+  process.env.NEXT_PUBLIC_API_URL ||
+  `${window.location.protocol}//${window.location.host}`;
+
+const wsBase = apiBase.replace(/^https?/, (match) =>
+  match === "https" ? "wss" : "ws"
+);
       const ws = new WebSocket(`${wsBase}/api/webcam/stream/${session.session_id}?token=${accessToken}`);
       wsRef.current = ws;
 
