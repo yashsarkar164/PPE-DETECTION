@@ -13,9 +13,17 @@ from sqlalchemy.orm import DeclarativeBase
 from core.config import get_settings
 
 settings = get_settings()
+database_url = settings.database_url
+
+if database_url.startswith("postgresql://"):
+    database_url = database_url.replace(
+        "postgresql://",
+        "postgresql+asyncpg://",
+        1,
+    )
 
 engine = create_async_engine(
-    settings.database_url,
+    database_url,
     echo=(settings.environment == "development"),
     pool_pre_ping=True,
     pool_size=10,
