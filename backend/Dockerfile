@@ -21,4 +21,4 @@ EXPOSE 8000
 
 # NOTE: place your trained model at backend/models/iocl_ppe.pt before building,
 # or mount it as a volume at runtime (see docker-compose.yml).
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
